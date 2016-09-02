@@ -39,11 +39,13 @@
     
     topPanel.backgroundColor = [UIColor redColor];
     bottomPanel.backgroundColor = [UIColor greenColor];
-}
-
-- (void)setContentOffset:(CGPoint)contentOffset {
-    NSLog(@"contentOffset %@", NSStringFromCGPoint(contentOffset));
-    [super setContentOffset:contentOffset];
+    
+    UIImageView *scannedRecipes = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"scanned_recipes"]];
+    UIScrollView *scrollableImageView = [[UIScrollView alloc] initWithFrame:self.bounds];
+    scrollableImageView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+    [scrollableImageView addSubview:scannedRecipes];
+    scrollableImageView.contentSize = scannedRecipes.intrinsicContentSize;
+    [_bottomPanel addSubview:scrollableImageView];
 }
 
 - (void)layoutSubviews {
@@ -57,14 +59,7 @@
     self.bottomPanel.frame = bottomPanelFrame;
     
     self.contentSize = CGSizeMake(CGRectGetWidth(self.bounds), CGRectGetHeight(self.bottomPanel.bounds) + self.topPanelHeight);
-}
 
-/*
-// Only override drawRect: if you perform custom drawing.
-// An empty implementation adversely affects performance during animation.
-- (void)drawRect:(CGRect)rect {
-    // Drawing code
 }
-*/
 
 @end
