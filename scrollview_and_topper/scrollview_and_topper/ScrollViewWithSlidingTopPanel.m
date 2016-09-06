@@ -108,7 +108,7 @@
 
 - (void)setContentOffset:(CGPoint)contentOffset {
     [super setContentOffset:contentOffset];
-    NSLog(@"xxxJFS setContentOffset of parent. %7.1f, %7.1f", contentOffset.y, self.contentOffset.y);
+//    NSLog(@"xxxJFS setContentOffset of parent. %7.1f, %7.1f", contentOffset.y, self.contentOffset.y);
 }
 
 - (void)p_panGestureHandler:(UIPanGestureRecognizer *)panGestureRecognizer {
@@ -118,24 +118,29 @@
         case UIGestureRecognizerStateBegan:
             self.deltaY = translation.y;
             self.lastPositionY = translation.y;
-            NSLog(@"xxxJFS gesture %@ began.... %7.1f %7.2f", scrollViewName, translation.y, self.deltaY);
+            NSLog(@"xxxJFS gesture %@ began.... off={%7.1f, %7.1f} %7.1f %7.2f", scrollViewName, self.contentOffset.x, self.contentOffset.y, translation.y, self.deltaY);
             [self.myDynamicAnimator removeAllBehaviors];
             break;
         case UIGestureRecognizerStateEnded:
         {
             CGPoint velocity = [panGestureRecognizer velocityInView:self];
-            NSLog(@"xxxJFS gesture %@ ended.... %7.1f %7.2f %7.1f", scrollViewName, translation.y, self.deltaY, velocity.y);
+            NSLog(@"xxxJFS gesture %@ ended.... off={%7.1f, %7.1f} t=%7.1f olp=%7.1f nlp=%7.1f d=%7.2f v=%7.1f", scrollViewName, self.contentOffset.x, self.contentOffset.y, translation.y, self.lastPositionY, self.lastPositionY, self.deltaY, velocity.y);
 
-            self.myDynamicItem.center = CGPointMake(-self.bounds.origin.x, -self.bounds.origin.y);
+            self.myDynamicItem.center = CGPointMake(-self.contentOffset.x, -self.contentOffset.y);
             UIDynamicItemBehavior *decelerationBehavior = [[UIDynamicItemBehavior alloc] initWithItems:@[self.myDynamicItem]];
             [decelerationBehavior addLinearVelocity:velocity forItem:self.myDynamicItem];
             decelerationBehavior.resistance = 8.0;
+            NSLog(@"xxxJFS myDynamicCenter %7.1f", self.myDynamicItem.center.y);
+            self.lastPositionY = self.myDynamicItem.center.y;
             __weak typeof(self)weakSelf = self;
             decelerationBehavior.action = ^{
-                weakSelf.deltaY = weakSelf.myDynamicItem.center.y -  weakSelf.lastPositionY;
+                CGFloat previousLastPositionY = weakSelf.lastPositionY;
+                weakSelf.deltaY = weakSelf.myDynamicItem.center.y - previousLastPositionY;
                 weakSelf.lastPositionY = weakSelf.myDynamicItem.center.y;
-                NSLog(@"xxxJFS gesture %@ decel.... %7.1f %7.2f", scrollViewName, weakSelf.myDynamicItem.center.y, self.deltaY);
-                self.contentOffset = CGPointMake(-translation.x, -weakSelf.lastPositionY);
+                CGPoint newOffset = CGPointMake(self.contentOffset.x, self.contentOffset.y - self.deltaY);
+                NSLog(@"xxxJFS gesture %@ decel.... off={%7.1f, %7.1f} t=%7.1f olp=%7.1f nlp=%7.1f d=%7.2f noff={%7.1f, %7.1f}", scrollViewName, weakSelf.contentOffset.x, weakSelf.contentOffset.y, translation.y, previousLastPositionY, weakSelf.lastPositionY, weakSelf.deltaY, newOffset.x, newOffset.y);
+
+                self.contentOffset = newOffset;
             };
             [self.myDynamicAnimator addBehavior:decelerationBehavior];
             break;
@@ -144,11 +149,15 @@
             NSLog(@"xxxJFS gesture %@ failed... %@", scrollViewName, NSStringFromCGPoint(translation));
             break;
         case UIGestureRecognizerStateChanged:
-            self.deltaY = translation.y - self.lastPositionY;
+        {
+            CGFloat previousLastPositionY = self.lastPositionY;
+            self.deltaY = translation.y - previousLastPositionY;
             self.lastPositionY = translation.y;
-            NSLog(@"xxxJFS gesture %@ changed.. %7.1f %7.2f", scrollViewName, translation.y, self.deltaY);
-            self.contentOffset = CGPointMake(-translation.x, -translation.y);
+            CGPoint newOffset = CGPointMake(self.contentOffset.x, self.contentOffset.y - self.deltaY);
+            NSLog(@"xxxJFS gesture %@ changed.. off={%7.1f, %7.1f} t=%7.1f olp=%7.1f nlp=%7.1f d=%7.2f noff={%7.1f, %7.1f}", scrollViewName, self.contentOffset.x, self.contentOffset.y, translation.y, previousLastPositionY, self.lastPositionY, self.deltaY, newOffset.x, newOffset.y);
+            self.contentOffset = newOffset;
             break;
+        }
         case UIGestureRecognizerStatePossible:
             NSLog(@"xxxJFS gesture %@ possible. %@", scrollViewName, NSStringFromCGPoint([panGestureRecognizer translationInView:self]));
             break;
