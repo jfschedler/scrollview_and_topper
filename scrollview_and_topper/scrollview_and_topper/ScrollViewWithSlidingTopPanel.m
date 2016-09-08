@@ -25,6 +25,7 @@
 @property (weak, nonatomic) UIView *mainPanel;
 @property (weak, nonatomic) UIView *topPanel;
 @property (weak, nonatomic) UIView *bottomPanel;
+@property (weak, nonatomic) UILabel *label;
 @property (weak, nonatomic) UIScrollView *innerScrollView;
 @property (weak, nonatomic, readonly) UIPanGestureRecognizer *parentPanGestureRecognizer;
 @property (weak, nonatomic, readonly) UIPanGestureRecognizer *childPanGestureRecognizer;
@@ -66,7 +67,12 @@
     UIView *topPanel = [[UIView alloc] initWithFrame:self.bounds];
     [mainPanel addSubview:topPanel];
     _topPanel = topPanel;
-//    topPanel.frame = CGRectMake(0, 0, 100, 100);
+
+    UILabel *label = [[UILabel alloc] initWithFrame:self.bounds];
+    label.text = @"This is a Label";
+    _label = label;
+    _label.textColor = [UIColor yellowColor];
+    [topPanel addSubview:label];
     
     UIView *bottomPanel = [[UIView alloc] initWithFrame:self.bounds];
     [self addSubview:bottomPanel];
@@ -107,6 +113,8 @@
     topPanelFrame.origin = CGPointZero;
     topPanelFrame.size.height = self.topPanelHeight;
     self.topPanel.frame = topPanelFrame;
+    
+    self.label.frame = CGRectMake(5, self.topPanelHeight - self.label.intrinsicContentSize.height - 5, self.label.intrinsicContentSize.width, self.label.intrinsicContentSize.height);
     
     CGRect bottomPanelFrame = self.bounds;
     bottomPanelFrame.origin.y = self.topPanelHeight;
@@ -172,8 +180,8 @@
     // The algorithm expects a positive offset, so we have to negate the result if the offset was negative.
     rubberBandedY = (newOffset.y < 0.0f) ? -rubberBandedY : rubberBandedY;
 //    NSLog(@"  rubberbandEffect initial offset %7.1f, constrained offset %7.1f, rubber band %7.1f", newOffset.y, constrainedOffsetY, rubberBandedY);
-//    return CGPointMake(newOffset.x, constrainedOffsetY + rubberBandedY);
-    return newOffset;
+    return CGPointMake(newOffset.x, constrainedOffsetY + rubberBandedY);
+//    return newOffset;
 }
 
 - (void)p_panGestureHandler:(UIPanGestureRecognizer *)panGestureRecognizer {
