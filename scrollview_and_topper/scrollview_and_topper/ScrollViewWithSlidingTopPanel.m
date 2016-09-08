@@ -30,8 +30,6 @@
 @property (weak, nonatomic, readonly) UIPanGestureRecognizer *childPanGestureRecognizer;
 @property (strong, nonatomic) MyDynamicItem *myDynamicItem;
 @property (strong, nonatomic) UIDynamicAnimator *myDynamicAnimator;
-@property (assign, nonatomic) CGFloat lastPositionY;
-@property (assign, nonatomic) CGFloat deltaY;
 @property (assign, nonatomic) CGPoint parentStartOffset;
 @property (assign, nonatomic) CGPoint childStartOffset;
 @end
@@ -97,7 +95,7 @@
     _childPanGestureRecognizer = panGestureRecognizer;
     
     _myDynamicItem = [[MyDynamicItem alloc] init];
-    _myDynamicAnimator = [[UIDynamicAnimator alloc] initWithReferenceView:self];
+    _myDynamicAnimator = [[UIDynamicAnimator alloc] initWithReferenceView:self.innerScrollView];
 }
 
 - (void)layoutSubviews {
@@ -130,7 +128,7 @@
         CGPoint constrainedParentOffset = CGPointMake(self.parentStartOffset.x, fmax(minParentOffsetY, fmin(newParentOffset.y, maxParentOffsetY)));
         CGPoint newChildOffset          = CGPointMake(self.childStartOffset.x,  self.childStartOffset.y + (newParentOffset.y - constrainedParentOffset.y));
         self.contentOffset = constrainedParentOffset;
-        self.innerScrollView.contentOffset = newChildOffset;
+        self.innerScrollView.contentOffset = [self rubberbandEffectForInnerScrollView:newChildOffset];
     } else {
         CGPoint newChildOffset          = CGPointMake(self.childStartOffset.x, self.childStartOffset.y + translation.y);
         CGPoint constrainedChildOffset  = CGPointMake(self.childStartOffset.x, fmin(0.0, newChildOffset.y));
@@ -140,52 +138,19 @@
         CGPoint adjustedChildOffset     = CGPointMake(constrainedChildOffset.x,  constrainedChildOffset.y + (newParentOffset.y - constrainedParentOffset.y));
         
         self.contentOffset = constrainedParentOffset;
-        self.innerScrollView.contentOffset = adjustedChildOffset;
+        self.innerScrollView.contentOffset = [self rubberbandEffectForInnerScrollView:adjustedChildOffset];
     }
 
-    NSLog(@"translation %7.1f, startParent %7.1f newParent %7.1f startChild %7.1f newChild %7.1f", translation.y, self.parentStartOffset.y, self.contentOffset.y, self.childStartOffset.y, self.innerScrollView.contentOffset.y);
+//    NSLog(@"translation %7.1f, startParent %7.1f newParent %7.1f startChild %7.1f newChild %7.1f", translation.y, self.parentStartOffset.y, self.contentOffset.y, self.childStartOffset.y, self.innerScrollView.contentOffset.y);
 }
 
-- (void)incrementContentOffsetOld:(CGFloat)delta {
-    if (delta > 0) {
-        if (self.contentOffset.y < (self.topPanelHeight - self.topPanelMinimumVisibleHeight)) {
-            CGFloat newOffsetY = fminf((self.contentOffset.y + delta), (self.topPanelHeight - self.topPanelMinimumVisibleHeight));
-            CGFloat slop = (self.contentOffset.y + delta) - newOffsetY;
-            NSLog(@"          incrementContentOffset case #1 delta %f", newOffsetY);
-            self.contentOffset = CGPointMake(0, newOffsetY);
-            if (slop > 0) {
-                NSLog(@"          incrementContentOffset case #1 slop  %f", slop);
-                self.innerScrollView.contentOffset = [self rubberbandEffect:CGPointMake(0, slop) withScrollView:self.innerScrollView];
-            }
-        } else {
-            NSLog(@"          incrementContentOffset case #2 delta %f", delta);
-            self.innerScrollView.contentOffset = [self rubberbandEffect:CGPointMake(0, self.innerScrollView.contentOffset.y + delta) withScrollView:self.innerScrollView];
-        }
-    } else {
-        if (self.innerScrollView.contentOffset.y > 0) {
-            CGFloat newOffsetY = fmaxf(self.innerScrollView.contentOffset.y + delta, 0);
-            CGFloat slop = (self.innerScrollView.contentOffset.y + delta) - newOffsetY;
-            NSLog(@"          incrementContentOffset case #3 delta %f", newOffsetY);
-            self.innerScrollView.contentOffset = CGPointMake(0, newOffsetY);
-            if (slop < 0) {
-                NSLog(@"          incrementContentOffset case #3 slop  %f", slop);
-                self.contentOffset = [self rubberbandEffect:CGPointMake(0, self.contentOffset.y + slop) withScrollView:self.innerScrollView];
-            }
-        } else {
-            NSLog(@"          incrementContentOffset case #4 delta %f", delta);
-            self.contentOffset = [self rubberbandEffect:CGPointMake(0, self.contentOffset.y + delta) withScrollView:self.innerScrollView];
-        }
-    }
-}
-
-- (CGPoint)rubberbandEffect:(CGPoint)offset withScrollView:(UIScrollView *)scrollView {
+- (CGPoint)rubberbandEffectForInnerScrollView:(CGPoint)newOffset {
     
     // the offset can be between these two values
     CGFloat minOffsetY = 0.0f;
-    CGFloat maxOffsetY = scrollView.contentSize.height - CGRectGetHeight(scrollView.bounds);
+    CGFloat maxOffsetY = self.innerScrollView.contentSize.height - CGRectGetHeight(self.innerScrollView.bounds);
     
-    CGFloat newOffsetY = offset.y;
-    CGFloat constrainedOffsetY = fmax(minOffsetY, fmin(newOffsetY, maxOffsetY));
+    CGFloat constrainedOffsetY = fmax(minOffsetY, fmin(newOffset.y, maxOffsetY));
     
     //  According to http://holko.pl/2014/07/06/inertia-bouncing-rubber-banding-uikit-dynamics
     //  to implement a rubber-banding effect, we adjust offset during panning according to this
@@ -196,53 +161,43 @@
     //    x – distance from the edge
     //    c – constant (UIScrollView uses 0.55)
     //    d – dimension, either width or height
-    const CGFloat distanceFromEdge = newOffsetY - constrainedOffsetY;
+    const CGFloat distanceFromEdge = newOffset.y - constrainedOffsetY;
     const CGFloat constant         = 0.55f;
-    const CGFloat dimension        = CGRectGetHeight(scrollView.bounds);
+    const CGFloat dimension        = CGRectGetHeight(self.innerScrollView.bounds);
     CGFloat rubberBandedY = (fabs(distanceFromEdge) * dimension * constant) / (dimension + constant * fabs(distanceFromEdge));
 
     // The algorithm expects a positive offset, so we have to negate the result if the offset was negative.
-    rubberBandedY = (offset.y < 0.0f) ? -rubberBandedY : rubberBandedY;
-    NSLog(@"    rubberbandEffect initial offset %7.1f, constrained offset %7.1f, rubber band %7.1f", offset.y, constrainedOffsetY, rubberBandedY);
-//    return CGPointMake(offset.x, constrainedOffsetY + rubberBandedY);
-    return offset;
+    rubberBandedY = (newOffset.y < 0.0f) ? -rubberBandedY : rubberBandedY;
+//    NSLog(@"    rubberbandEffect initial offset %7.1f, constrained offset %7.1f, rubber band %7.1f", newOffset.y, constrainedOffsetY, rubberBandedY);
+    return CGPointMake(newOffset.x, constrainedOffsetY + rubberBandedY);
+//    return offset;
 }
 
 - (void)p_panGestureHandler:(UIPanGestureRecognizer *)panGestureRecognizer {
-//    NSString *scrollViewName = (panGestureRecognizer == self.parentPanGestureRecognizer) ? @"of parent" : @"of  child";
+    NSString *scrollViewName = (panGestureRecognizer == self.parentPanGestureRecognizer) ? @"of parent" : @"of  child";
     CGPoint translation = [panGestureRecognizer translationInView:self];
     switch (panGestureRecognizer.state) {
         case UIGestureRecognizerStateBegan:
-            self.deltaY = translation.y;
-            self.lastPositionY = translation.y;
             self.parentStartOffset = self.contentOffset;
             self.childStartOffset = self.innerScrollView.contentOffset;
-//            NSLog(@"xxxJFS gesture %@ began.... off={%7.1f, %7.1f} %7.1f %7.2f", scrollViewName, self.contentOffset.x, self.contentOffset.y, translation.y, self.deltaY);
+            NSLog(@"xxxJFS gesture %@ began.... off={%7.1f, %7.1f} t=%7.1f", scrollViewName, self.contentOffset.x, self.contentOffset.y, translation.y);
             [self.myDynamicAnimator removeAllBehaviors];
             break;
         case UIGestureRecognizerStateEnded:
         {
             CGPoint velocity = [panGestureRecognizer velocityInView:self];
-//            NSLog(@"xxxJFS gesture %@ ended.... off={%7.1f, %7.1f} t=%7.1f olp=%7.1f nlp=%7.1f d=%7.2f v=%7.1f", scrollViewName, self.contentOffset.x, self.contentOffset.y, translation.y, self.lastPositionY, self.lastPositionY, self.deltaY, velocity.y);
+            NSLog(@"xxxJFS gesture %@ ended.... off={%7.1f, %7.1f} t=%7.1f v=%7.1f", scrollViewName, self.contentOffset.x, self.contentOffset.y, translation.y, velocity.y);
 
-            self.myDynamicItem.center = CGPointMake(-self.contentOffset.x, -self.contentOffset.y);
+            self.myDynamicItem.center = CGPointZero;//CGPointMake(-self.contentOffset.x, -self.contentOffset.y);
             UIDynamicItemBehavior *decelerationBehavior = [[UIDynamicItemBehavior alloc] initWithItems:@[self.myDynamicItem]];
             [decelerationBehavior addLinearVelocity:velocity forItem:self.myDynamicItem];
             decelerationBehavior.resistance = 8.0;
-//            NSLog(@"xxxJFS myDynamicCenter %7.1f", self.myDynamicItem.center.y);
-            self.lastPositionY = self.myDynamicItem.center.y;
             __weak typeof(self)weakSelf = self;
             decelerationBehavior.action = ^{
-                CGFloat previousLastPositionY = weakSelf.lastPositionY;
-                weakSelf.deltaY = weakSelf.myDynamicItem.center.y - previousLastPositionY;
-                weakSelf.lastPositionY = weakSelf.myDynamicItem.center.y;
-//                CGPoint newOffset = CGPointMake(self.contentOffset.x, self.contentOffset.y - self.deltaY);
-//                NSLog(@"xxxJFS gesture %@ decel.... off={%7.1f, %7.1f} t=%7.1f olp=%7.1f nlp=%7.1f d=%f", scrollViewName, weakSelf.contentOffset.x, weakSelf.contentOffset.y, translation.y, previousLastPositionY, weakSelf.lastPositionY, weakSelf.deltaY);
-                if (fabs(weakSelf.deltaY) > 0.00001) {
-                    [self incrementContentOffsetOld:-weakSelf.deltaY];
-                }
+                CGPoint newOffset = CGPointMake(translation.x, translation.y + self.myDynamicItem.center.y);
+                [weakSelf incrementContentOffset:newOffset];
             };
-//            [self.myDynamicAnimator addBehavior:decelerationBehavior];
+            [self.myDynamicAnimator addBehavior:decelerationBehavior];
             break;
         }
         case UIGestureRecognizerStateFailed:
@@ -250,15 +205,8 @@
             break;
         case UIGestureRecognizerStateChanged:
         {
-            CGFloat previousLastPositionY = self.lastPositionY;
-            self.deltaY = translation.y - previousLastPositionY;
-            self.lastPositionY = translation.y;
-//            CGPoint newOffset = CGPointMake(self.contentOffset.x, self.contentOffset.y - self.deltaY);
-//            NSLog(@"xxxJFS gesture %@ changed.. off={%7.1f, %7.1f} t=%7.1f olp=%7.1f nlp=%7.1f d=%f", scrollViewName, self.contentOffset.x, self.contentOffset.y, translation.y, previousLastPositionY, self.lastPositionY, self.deltaY);
-//            self.contentOffset = newOffset;
-            if (fabs(self.deltaY) > 0.00001) {
-                [self incrementContentOffset:translation];
-            }
+            NSLog(@"xxxJFS gesture %@ changed.. off={%7.1f, %7.1f} t=%7.1f", scrollViewName, self.contentOffset.x, self.contentOffset.y, translation.y);
+            [self incrementContentOffset:translation];
             break;
             
         }
