@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		7576AF6C1D833B33007DE18B /* GreenCell.m in Sources */ = {isa = PBXBuildFile; fileRef = 7576AF6B1D833B33007DE18B /* GreenCell.m */; };
+		7576AF6E1D833B69007DE18B /* GreenCell.xib in Resources */ = {isa = PBXBuildFile; fileRef = 7576AF6D1D833B69007DE18B /* GreenCell.xib */; };
 		758E8B761D79D37000A07D99 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 758E8B751D79D37000A07D99 /* main.m */; };
 		758E8B791D79D37000A07D99 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 758E8B781D79D37000A07D99 /* AppDelegate.m */; };
 		758E8B7C1D79D37000A07D99 /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 758E8B7B1D79D37000A07D99 /* ViewController.m */; };
@@ -17,6 +19,9 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		7576AF6A1D833B33007DE18B /* GreenCell.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GreenCell.h; sourceTree = "<group>"; };
+		7576AF6B1D833B33007DE18B /* GreenCell.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GreenCell.m; sourceTree = "<group>"; };
+		7576AF6D1D833B69007DE18B /* GreenCell.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = GreenCell.xib; sourceTree = "<group>"; };
 		758E8B711D79D37000A07D99 /* scrollview_and_topper.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = scrollview_and_topper.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		758E8B751D79D37000A07D99 /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		758E8B771D79D37000A07D99 /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
@@ -61,6 +66,9 @@
 		758E8B731D79D37000A07D99 /* scrollview_and_topper */ = {
 			isa = PBXGroup;
 			children = (
+				7576AF6A1D833B33007DE18B /* GreenCell.h */,
+				7576AF6B1D833B33007DE18B /* GreenCell.m */,
+				7576AF6D1D833B69007DE18B /* GreenCell.xib */,
 				758E8B771D79D37000A07D99 /* AppDelegate.h */,
 				758E8B781D79D37000A07D99 /* AppDelegate.m */,
 				758E8B7A1D79D37000A07D99 /* ViewController.h */,
@@ -144,6 +152,7 @@
 				758E8B841D79D37000A07D99 /* LaunchScreen.storyboard in Resources */,
 				758E8B811D79D37000A07D99 /* Assets.xcassets in Resources */,
 				758E8B7F1D79D37000A07D99 /* Main.storyboard in Resources */,
+				7576AF6E1D833B69007DE18B /* GreenCell.xib in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -156,6 +165,7 @@
 			files = (
 				758E8B7C1D79D37000A07D99 /* ViewController.m in Sources */,
 				758E8B931D79D92100A07D99 /* ScrollViewWithSlidingTopPanel.m in Sources */,
+				7576AF6C1D833B33007DE18B /* GreenCell.m in Sources */,
 				758E8B791D79D37000A07D99 /* AppDelegate.m in Sources */,
 				758E8B761D79D37000A07D99 /* main.m in Sources */,
 			);
@@ -308,6 +318,7 @@
 				758E8B8A1D79D37000A07D99 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};

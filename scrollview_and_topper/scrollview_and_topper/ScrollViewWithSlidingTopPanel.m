@@ -1,5 +1,7 @@
 #import "ScrollViewWithSlidingTopPanel.h"
 
+#import "GreenCell.h"
+
 @interface MyDynamicItem : NSObject <UIDynamicItem>
 @property (nonatomic, readwrite) CGPoint center;
 @property (nonatomic, readonly) CGRect bounds;
@@ -21,7 +23,7 @@
 
 @end
 
-@interface ScrollViewWithSlidingTopPanel () <UIScrollViewDelegate>
+@interface ScrollViewWithSlidingTopPanel () <UIScrollViewDelegate, UICollectionViewDataSource>
 @property (weak, nonatomic) UIView *mainPanel;
 @property (weak, nonatomic) UIView *topPanel;
 @property (weak, nonatomic) UIView *bottomPanel;
@@ -36,6 +38,9 @@
 @property (assign, nonatomic) CGPoint lastPosition;
 @property (strong, nonatomic) UIDynamicItemBehavior *decelerationBehavior;
 @property (strong, nonatomic) UIAttachmentBehavior *springBehavior;
+
+@property (assign, nonatomic) NSUInteger collectionViewDataSourceCount;
+
 @end
 
 @implementation ScrollViewWithSlidingTopPanel
@@ -85,7 +90,7 @@
     topPanel.backgroundColor = [UIColor redColor];
     bottomPanel.backgroundColor = [UIColor greenColor];
     
-    UIScrollView *innerScrollView = [self p_makeScrollableImage];
+    UIScrollView *innerScrollView = [self p_makeCollectionView:100];//[self p_makeScrollableImage];
     [_bottomPanel addSubview:innerScrollView];
     _innerScrollView = innerScrollView;
     
@@ -240,7 +245,7 @@
             return;
         }
         weakSelf.lastPosition = weakSelf.myDynamicItem.center;
-        [weakSelf incrementContentOffset:weakSelf.myDynamicItem.center useRubberBandEffect:NO];
+        [weakSelf incrementContentOffset:weakSelf.myDynamicItem.center useRubberBandEffect:YES];
         NSLog(@"decel item=%7.1f, delta=%7.1f, inner=%7.1f", fabs(weakSelf.myDynamicItem.center.y), fabs(weakSelf.myDynamicItem.center.y - weakSelf.lastPosition.y), weakSelf.innerScrollView.contentOffset.y);
     };
     
@@ -286,6 +291,43 @@
     scrollableImageView.backgroundColor = [UIColor greenColor];
 
     return scrollableImageView;
+}
+
+#pragma mark - UICollectionView
+
+- (UICollectionView *)p_makeCollectionView:(NSUInteger)count {
+    UICollectionViewFlowLayout *flowLayout = [[UICollectionViewFlowLayout alloc] init];
+    flowLayout.itemSize = CGSizeMake(80, 80);
+    flowLayout.sectionInset = UIEdgeInsetsMake(5, 5, 5, 5);
+    
+    UICollectionView *collectionView = [[UICollectionView alloc] initWithFrame:self.bounds collectionViewLayout:flowLayout];
+    collectionView.dataSource = self;
+    collectionView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+    collectionView.backgroundColor = [UIColor greenColor];
+
+
+    self.collectionViewDataSourceCount = count;
+    
+    UINib *collectionViewCellNib = [UINib nibWithNibName:NSStringFromClass([GreenCell class]) bundle:[NSBundle mainBundle]];
+    [collectionView registerNib:collectionViewCellNib forCellWithReuseIdentifier:NSStringFromClass([GreenCell class])];
+
+    return collectionView;
+}
+
+#pragma mark - UICollectionViewDataSource
+- (NSInteger)collectionView:(UICollectionView *)collectionView numberOfItemsInSection:(NSInteger)section {
+    return self.collectionViewDataSourceCount;
+}
+
+- (NSInteger)numberOfSectionsInCollectionView:(UICollectionView *)collectionView {
+    return 1;
+}
+
+- (UICollectionViewCell *)collectionView:(UICollectionView *)collectionView cellForItemAtIndexPath:(NSIndexPath *)indexPath {
+    NSLog(@"indexPath %@ self %@", indexPath, NSStringFromCGRect(collectionView.frame));
+    GreenCell *cell = (GreenCell *)[collectionView dequeueReusableCellWithReuseIdentifier:NSStringFromClass([GreenCell class]) forIndexPath:indexPath];
+    cell.label.text = [NSString stringWithFormat:@"%@", @(indexPath.item+1)];
+    return cell;
 }
 
 
