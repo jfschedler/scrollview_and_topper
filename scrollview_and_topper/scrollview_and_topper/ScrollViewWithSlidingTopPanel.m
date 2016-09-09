@@ -85,22 +85,16 @@
     topPanel.backgroundColor = [UIColor redColor];
     bottomPanel.backgroundColor = [UIColor greenColor];
     
-    UIImageView *scannedRecipes = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"scanned_recipes"]];
-    UIScrollView *scrollableImageView = [[UIScrollView alloc] initWithFrame:self.bounds];
-    scrollableImageView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-    [scrollableImageView addSubview:scannedRecipes];
-    scrollableImageView.contentSize = scannedRecipes.intrinsicContentSize;
-    scrollableImageView.scrollEnabled = NO;
-    scrollableImageView.backgroundColor = [UIColor greenColor];
-    [_bottomPanel addSubview:scrollableImageView];
-    _innerScrollView = scrollableImageView;
+    UIScrollView *innerScrollView = [self p_makeScrollableImage];
+    [_bottomPanel addSubview:innerScrollView];
+    _innerScrollView = innerScrollView;
     
     UIPanGestureRecognizer *panGestureRecognizer = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(p_panGestureHandler:)];
     [self addGestureRecognizer:panGestureRecognizer];
     _parentPanGestureRecognizer = panGestureRecognizer;
     
     panGestureRecognizer = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(p_panGestureHandler:)];
-    [scrollableImageView addGestureRecognizer:panGestureRecognizer];
+    [innerScrollView addGestureRecognizer:panGestureRecognizer];
     _childPanGestureRecognizer = panGestureRecognizer;
     
     _myDynamicItem = [[MyDynamicItem alloc] init];
@@ -280,6 +274,18 @@
 
     [self.myDynamicAnimator addBehavior:self.springBehavior];
     return YES;
+}
+
+- (UIScrollView *)p_makeScrollableImage {
+    UIImageView *scannedRecipes = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"scanned_recipes"]];
+    UIScrollView *scrollableImageView = [[UIScrollView alloc] initWithFrame:self.bounds];
+    scrollableImageView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+    [scrollableImageView addSubview:scannedRecipes];
+    scrollableImageView.contentSize = scannedRecipes.intrinsicContentSize;
+    scrollableImageView.scrollEnabled = NO;
+    scrollableImageView.backgroundColor = [UIColor greenColor];
+
+    return scrollableImageView;
 }
 
 
