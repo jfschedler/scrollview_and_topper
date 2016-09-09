@@ -36,6 +36,7 @@
 @property (assign, nonatomic) CGPoint parentStartOffset;
 @property (assign, nonatomic) CGPoint childStartOffset;
 @property (assign, nonatomic) CGPoint lastPosition;
+@property (assign, nonatomic) CGPoint lastOffset;
 @property (strong, nonatomic) UIDynamicItemBehavior *decelerationBehavior;
 @property (strong, nonatomic) UIAttachmentBehavior *springBehavior;
 
@@ -228,25 +229,34 @@
 - (void)p_addDecelerationBehavior:(CGPoint)origin startingVelocity:(CGPoint)startingVelocity {
     NSAssert(!self.decelerationBehavior, @"deceleration behavior already created");
     
-    self.lastPosition = CGPointMake(99999, 99999);
+    self.lastPosition = self.lastOffset = CGPointMake(99999, 99999);
     self.myDynamicItem.center = origin;
     self.decelerationBehavior = [[UIDynamicItemBehavior alloc] initWithItems:@[self.myDynamicItem]];
     [self.decelerationBehavior addLinearVelocity:startingVelocity forItem:self.myDynamicItem];
-    self.decelerationBehavior.resistance = 8.0;
+    self.decelerationBehavior.resistance = 2.0;
     
     typeof(self) __weak weakSelf = self;
     self.decelerationBehavior.action = ^{
         if (!weakSelf) {
             return;
         }
-        if (fabs(weakSelf.myDynamicItem.center.y - weakSelf.lastPosition.y) < 0.5) {
+        CGPoint beginInnerOffset = weakSelf.innerScrollView.contentOffset;
+        if ((self.innerScrollView.contentOffset.y + 200 < 0) ||
+            (self.innerScrollView.contentOffset.y - 200 > (self.innerScrollView.contentSize.height - CGRectGetHeight(self.innerScrollView.bounds)))) {
             [weakSelf.myDynamicAnimator removeBehavior:weakSelf.decelerationBehavior];
+            [weakSelf incrementContentOffset:weakSelf.myDynamicItem.center useRubberBandEffect:NO];
             [weakSelf p_addSpringBehavior];
             return;
         }
+        [weakSelf incrementContentOffset:weakSelf.myDynamicItem.center useRubberBandEffect:NO];
+        NSLog(@"decel item=%7.1f, item delta=%7.1f, offset delta=%7.1f, begin inner=%7.1f, end inner=%7.1f",
+              fabs(weakSelf.myDynamicItem.center.y),
+              fabs(weakSelf.myDynamicItem.center.y - weakSelf.lastPosition.y),
+              fabs(weakSelf.innerScrollView.contentOffset.y - weakSelf.lastOffset.y),
+              beginInnerOffset.y,
+              weakSelf.innerScrollView.contentOffset.y);
         weakSelf.lastPosition = weakSelf.myDynamicItem.center;
-        [weakSelf incrementContentOffset:weakSelf.myDynamicItem.center useRubberBandEffect:YES];
-        NSLog(@"decel item=%7.1f, delta=%7.1f, inner=%7.1f", fabs(weakSelf.myDynamicItem.center.y), fabs(weakSelf.myDynamicItem.center.y - weakSelf.lastPosition.y), weakSelf.innerScrollView.contentOffset.y);
+        weakSelf.lastOffset = weakSelf.innerScrollView.contentOffset;
     };
     
     [self.myDynamicAnimator addBehavior:self.decelerationBehavior];
@@ -271,10 +281,13 @@
     self.springBehavior.damping = 1;
     self.springBehavior.frequency = 2;
 
+    self.lastOffset = self.innerScrollView.contentOffset;
+    
     __weak typeof(self)weakSelf = self;
     self.springBehavior.action = ^{
         weakSelf.innerScrollView.contentOffset = weakSelf.myDynamicItem.center;
-        NSLog(@"spring item=%7.1f, inner=%7.1f", fabs(weakSelf.myDynamicItem.center.y), weakSelf.innerScrollView.contentOffset.y);
+        NSLog(@"spring item=%7.1f, inner=%7.1f delta=%7.1f", fabs(weakSelf.myDynamicItem.center.y), weakSelf.innerScrollView.contentOffset.y, fabs(weakSelf.innerScrollView.contentOffset.y - weakSelf.lastOffset.y));
+        weakSelf.lastOffset = weakSelf.innerScrollView.contentOffset;
     };
 
     [self.myDynamicAnimator addBehavior:self.springBehavior];
@@ -324,7 +337,6 @@
 }
 
 - (UICollectionViewCell *)collectionView:(UICollectionView *)collectionView cellForItemAtIndexPath:(NSIndexPath *)indexPath {
-    NSLog(@"indexPath %@ self %@", indexPath, NSStringFromCGRect(collectionView.frame));
     GreenCell *cell = (GreenCell *)[collectionView dequeueReusableCellWithReuseIdentifier:NSStringFromClass([GreenCell class]) forIndexPath:indexPath];
     cell.label.text = [NSString stringWithFormat:@"%@", @(indexPath.item+1)];
     return cell;
